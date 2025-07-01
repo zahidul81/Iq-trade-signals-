@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Trade Signals for 1 Minute</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+  <style>
+    body {
+      margin: 0;
+      background: #111;
+      color: #fff;
+      font-family: monospace;
+    }
+    #chart {
+      height: 300px;
+    }
+    #panel {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      background: #111;
+      color: #fff;
+      padding: 14px;
+      font-size: 15px;
+      border: 2px solid #0ff;
+      border-radius: 12px;
+      z-index: 9999;
+      width: 280px;
+      box-shadow: 0 0 10px #0ff;
+    }
+    #countdown {
+      font-size: 14px;
+      color: #0ff;
+      margin-top: 5px;
+    }
+  </style>
+</head>
+<body>
+<div id="chart"></div>
+<div id="panel">
+  ⏳ Loading signals...
+  <div id="countdown"></div>
+</div>
+
+<script>
+const chart = LightweightCharts.createChart(document.getElementById('chart'), {
+  width: window.innerWidth,
+  height: 300,
+  layout: { backgroundColor: '#111', textColor: '#fff' },
+  timeScale: { timeVisible: true },
+  grid: { vertLines: { color: '#222' }, horzLines: { color: '#222' } }
+});
+const series = chart.addCandlestickSeries();
+const panel = document.getElementById('panel');
+const countdownEl = document.getElementById('countdown');
+
+let countdown = 60;
+function startCountdown() {
+  clearInterval(window._timer);
+  window._timer = setInterval(() => {
+    countdown--;
+    countdownEl.textContent = `⏱️ Next signal in ${countdown}s`;
+    if (countdown <= 0) {
+      runSignals();
+      countdown = 60;
+    }
+  }, 1000);
+}
+
+async function fetchData() {
+  try {
+    const res = await fetch('https://api.binance.com/api/v3/klines?symbol=EURUSDT&interval=1m&limit=100');
+    const data = await res.json();
+    const candles = data.map(d => ({
+      time: d[0] / 1000,
+      open: parseFloat(d[1]),
+      high: parseFloat(d[2]),
+      low: parseFloat(d[3]),
+      close: parseFloat(d[4]),
+      volume: parseFloat(d[5])
+    }));
+    series.setData(candles);
+    return candles.reverse();
+  } catch (e) {
+    panel.innerHTML = '❌ Error fetching data';
+    return [];
+  }
+}
+
+function EMA(data, period) {
+  let k = 2 / (period + 1);
+  let ema = data[0];
+  for (let i = 1; i < data.length; i++) {
+    ema = data[i] * k + ema * (1 - k);
+  }
+  return ema;
+}
+function RSI(data, period = 14) {
+  let gains = 0, losses = 0;
+  for (let i = 1; i <= period; i++) {
+    const diff = data[i] - data[i - 1];
+    if (diff > 0) gains += diff;
+    else losses -= diff;
+  }
+  const rs = gains / losses;
+  return 100 - 100 / (1 + rs);
+}
+function MACD(data) {
+  const ema12 = EMA(data.slice(0, 12), 12);
+  const ema26 = EMA(data.slice(0, 26), 26);
+  const macdLine = ema12 - ema26;
+  const signalLine = EMA(new Array(9).fill(macdLine), 9);
+  return { macd: macdLine, signal: signalLine };
+}
+function BollingerBands(data, period = 20) {
+  const slice = data.slice(0, period);
+  const mean = slice.reduce((a, b) => a + b, 0) / period;
+  const variance = slice.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / period;
+  const stdDev = Math.sqrt(variance);
+  return {
+    upper: mean + 2 * stdDev,
+    lower: mean - 2 * stdDev,
+    mid: mean
+  };
+}
+function ADX(prices, period = 14) {
+  let upMoves = [], downMoves = [], trs = [];
+  for (let i = 1; i <= period; i++) {
+    let up = prices[i].high - prices[i - 1].high;
+    let down = prices[i - 1].low - prices[i].low;
+    upMoves.push(up > down && up > 0 ? up : 0);
+    downMoves.push(down > up && down > 0 ? down : 0);
+    trs.push(Math.max(
+      prices[i].high - prices[i].low,
+      Math.abs(prices[i].high - prices[i - 1].close),
+      Math.abs(prices[i].low - prices[i - 1].close)
+    ));
+  }
+  let tr = trs.reduce((a, b) => a + b, 0);
+  let plusDI = 100 * (upMoves.reduce((a, b) => a + b, 0) / tr);
+  let minusDI = 100 * (downMoves.reduce((a, b) => a + b, 0) / tr);
+  let dx = 100 * Math.abs(plusDI - minusDI) / (plusDI + minusDI);
+  return dx;
+}
+function getTrend(data) {
+  const [c1, c2, c3] = data.slice(0, 3).map(c => c.close);
+  if (c1 > c2 && c2 > c3) return "UP";
+  if (c1 < c2 && c2 < c3) return "DOWN";
+  return "SIDE";
+}
+function recommend(str) {
+  if (str >= 60) return "30s ✅";
+  if (str >= 40) return "1m ✅";
+  if (str >= 20) return "2m ⚠️";
+  return "No Trade ❌";
+}
+
+async function runSignals() {
+  const data = await fetchData();
+  if (!data || data.length < 26) return;
+  const closes = data.map(d => d.close);
+  const volumes = data.map(d => d.volume);
+  const last = closes[0];
+  const ema = EMA(closes.slice(0, 5), 5);
+  const rsi = RSI(closes);
+  const macd = MACD(closes);
+  const bb = BollingerBands(closes);
+  const adx = ADX(data);
+  const trend = getTrend(data);
+  const volSpike = volumes[0] > (volumes.slice(1, 10).reduce((a, b) => a + b, 0) / 9);
+
+  let signal = "WAIT", strength = 0;
+  if (rsi < 30 && last < bb.lower && trend === "UP" && macd.macd > macd.signal && adx > 20 && volSpike) {
+    signal = "CALL"; strength = 100 - rsi;
+  } else if (rsi > 70 && last > bb.upper && trend === "DOWN" && macd.macd < macd.signal && adx > 20 && volSpike) {
+    signal = "PUT"; strength = rsi - 70;
+  }
+
+  const rec = recommend(strength);
+  panel.innerHTML = `
+    <b>📛 Trade Signals for 1 Minute</b><br><br>
+    Signal: <b>${signal}</b><br>
+    Trend: ${trend}<br>
+    RSI: ${rsi.toFixed(2)} | EMA: ${ema.toFixed(4)}<br>
+    MACD: ${macd.macd.toFixed(4)} | Signal: ${macd.signal.toFixed(4)}<br>
+    BB Upper: ${bb.upper.toFixed(4)} | Lower: ${bb.lower.toFixed(4)}<br>
+    ADX: ${adx.toFixed(2)} | Volume spike: ${volSpike ? "✅" : "❌"}<br>
+    Strength: ${strength.toFixed(2)}<br>
+    🧠 Recommended: <b>${rec}</b><br>
+    🕒 Updated: ${new Date().toLocaleTimeString()}
+  `;
+}
+
+runSignals();
+startCountdown();
+</script>
+</body>
+</html>

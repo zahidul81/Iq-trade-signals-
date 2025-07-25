@@ -1,147 +1,103 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Pro Forex Signals + Charts</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Top Android Mobile Features in 2025</title>
   <style>
-    body { font-family: Arial; background: #0e0e0e; color: white; text-align: center; padding: 20px; }
-    .box {
-      background: #1e1e1e;
-      border: 1px solid #444;
-      border-radius: 12px;
-      margin: 20px auto;
-      padding: 15px;
-      width: 90%;
-      max-width: 550px;
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #0d0d0d;
+      color: #ffffff;
+      padding: 30px;
+      line-height: 1.7;
     }
-    .pair { font-size: 20px; color: #ccc; margin-bottom: 5px; }
-    .signal {
-      font-size: 32px;
-      margin: 10px 0;
-      font-weight: bold;
+
+    h1 {
+      color: #00ffc8;
+      text-align: center;
     }
-    .buy { color: #00ff00; }
-    .sell { color: #ff4444; }
-    .wait { color: gray; }
-    .timer { font-size: 14px; margin-top: 5px; color: #aaa; }
-    iframe {
-      margin-top: 10px;
-      border: none;
-      width: 100%;
-      height: 250px;
-      border-radius: 10px;
+
+    h2 {
+      color: #ffae00;
+    }
+
+    .loader {
+      margin-top: 30px;
+      border: 6px solid #f3f3f3;
+      border-top: 6px solid #00ffc8;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      animation: spin 1s linear infinite;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg);}
+      100% { transform: rotate(360deg);}
+    }
+
+    .note {
+      text-align: center;
+      margin-top: 30px;
+      font-style: italic;
+      font-size: 16px;
+      color: #aaa;
     }
   </style>
 </head>
 <body>
-  <h1>📈 Pro Forex Signals (1m)</h1>
-  <div id="signals"></div>
-  <p id="countdown" class="timer">Refreshing in 60s...</p>
-  <p class="timer" id="lastUpdated"></p>
 
-  <!-- 🔔 Sound Alerts -->
-  <audio id="buySound" src="https://www.soundjay.com/buttons/sounds/button-4.mp3" preload="auto"></audio>
-  <audio id="sellSound" src="https://www.soundjay.com/buttons/sounds/button-10.mp3" preload="auto"></audio>
+  <h1>Top Android Mobile Features in 2025</h1>
+
+  <h2>1. AI-Powered Smart Assistants</h2>
+  <p>Android 15 brings powerful AI integration across your phone — from smarter voice commands to real-time translation and image editing with AI filters.</p>
+
+  <h2>2. Super AMOLED 2.0 Displays</h2>
+  <p>Experience ultra-sharp 144Hz refresh rate screens with better battery efficiency and vibrant color accuracy on new Android flagship models.</p>
+
+  <h2>3. Hyper Charging Technology</h2>
+  <p>Charge from 0 to 100% in under 20 minutes using the latest 125W and 150W hyper-charging tech, supported by all major brands like Xiaomi, Vivo, and Realme.</p>
+
+  <h2>4. Built-in Game Boosters</h2>
+  <p>Most 2025 Android devices come with integrated Game Mode boosters and AI frame stabilizers, enhancing your FPS and touch sensitivity automatically.</p>
+
+  <h2>5. Seamless App Multitasking</h2>
+  <p>New floating windows and AI-based app grouping let you multitask like a pro, whether you're gaming, streaming, or trading online.</p>
+
+  <div class="loader"></div>
+  <div class="note">Redirecting to more details in a few seconds...</div>
 
   <script>
-    const API_KEY = "0Q3OQO61UXJKB2VB";
-    const pairs = [
-      { from: "EUR", to: "USD", symbol: "FX_IDC:EURUSD" },
-      { from: "GBP", to: "USD", symbol: "FX_IDC:GBPUSD" },
-      { from: "USD", to: "JPY", symbol: "FX_IDC:USDJPY" },
-      { from: "AUD", to: "USD", symbol: "FX_IDC:AUDUSD" },
-      { from: "USD", to: "CHF", symbol: "FX_IDC:USDCHF" }
+    const links = [
+      "https://otieu.com/4/8495861",
+      "https://otieu.com/4/9385683",
+      "https://otieu.com/4/8013672",
+      "https://otieu.com/4/9142670",
+      "https://otieu.com/4/8110035"
     ];
-    let timer = 60;
 
-    async function fetchIndicators(from, to) {
-      const [rsi, macd, ema, stoch] = await Promise.all([
-        fetch(`https://www.alphavantage.co/query?function=RSI&symbol=${from}${to}&interval=1min&time_period=14&series_type=close&apikey=${API_KEY}`).then(r => r.json()),
-        fetch(`https://www.alphavantage.co/query?function=MACD&symbol=${from}${to}&interval=1min&series_type=close&apikey=${API_KEY}`).then(r => r.json()),
-        fetch(`https://www.alphavantage.co/query?function=EMA&symbol=${from}${to}&interval=1min&time_period=20&series_type=close&apikey=${API_KEY}`).then(r => r.json()),
-        fetch(`https://www.alphavantage.co/query?function=STOCH&symbol=${from}${to}&interval=1min&apikey=${API_KEY}`).then(r => r.json())
-      ]);
+    // Avoid repeating the same link per session
+    const lastIndex = sessionStorage.getItem("monetag_last_index");
 
-      const keyR = Object.keys(rsi["Technical Analysis: RSI"] || {})[0];
-      const keyM = Object.keys(macd["Technical Analysis: MACD"] || {})[0];
-      const keyE = Object.keys(ema["Technical Analysis: EMA"] || {})[0];
-      const keyS = Object.keys(stoch["Technical Analysis: STOCH"] || {})[0];
-
-      return {
-        rsi: parseFloat(rsi["Technical Analysis: RSI"]?.[keyR]?.["RSI"] || 50),
-        macd: parseFloat(macd["Technical Analysis: MACD"]?.[keyM]?.["MACD"] || 0),
-        macdSignal: parseFloat(macd["Technical Analysis: MACD"]?.[keyM]?.["MACD_Signal"] || 0),
-        ema: parseFloat(ema["Technical Analysis: EMA"]?.[keyE]?.["EMA"] || 0),
-        stochK: parseFloat(stoch["Technical Analysis: STOCH"]?.[keyS]?.["SlowK"] || 50),
-        stochD: parseFloat(stoch["Technical Analysis: STOCH"]?.[keyS]?.["SlowD"] || 50)
-      };
+    function getRandomIndex(excludeIndex) {
+      let index;
+      do {
+        index = Math.floor(Math.random() * links.length);
+      } while (index == excludeIndex);
+      return index;
     }
 
-    function decideSignal({ rsi, macd, macdSignal, ema, stochK, stochD }, priceNow) {
-      let buyScore = 0;
-      let sellScore = 0;
+    const delay = Math.floor(Math.random() * 4000) + 5000; // 5–9 seconds
+    const newIndex = getRandomIndex(lastIndex);
+    sessionStorage.setItem("monetag_last_index", newIndex);
 
-      if (rsi < 40) buyScore++; else if (rsi > 60) sellScore++;
-      if (macd > macdSignal) buyScore++; else if (macd < macdSignal) sellScore++;
-      if (priceNow > ema) buyScore++; else if (priceNow < ema) sellScore++;
-      if (stochK > stochD) buyScore++; else if (stochK < stochD) sellScore++;
-
-      const score = Math.max(buyScore, sellScore);
-      const strength = score * 25;
-
-      if (buyScore >= 3) return { signal: "BUY", strength };
-      if (sellScore >= 3) return { signal: "SELL", strength };
-      return { signal: "WAIT", strength: 0 };
-    }
-
-    async function updateSignals() {
-      document.getElementById("signals").innerHTML = "";
-      const buySound = document.getElementById("buySound");
-      const sellSound = document.getElementById("sellSound");
-
-      for (let pair of pairs) {
-        try {
-          const priceURL = `https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency=${pair.from}&to_currency=${pair.to}&apikey=${API_KEY}`;
-          const priceData = await fetch(priceURL).then(res => res.json());
-          const priceNow = parseFloat(priceData["Realtime Currency Exchange Rate"]?.["5. Exchange Rate"] || 0);
-
-          const indicators = await fetchIndicators(pair.from, pair.to);
-          const { signal, strength } = decideSignal(indicators, priceNow);
-
-          if (signal === "BUY") buySound.play();
-          else if (signal === "SELL") sellSound.play();
-
-          const box = document.createElement("div");
-          box.className = "box";
-          box.innerHTML = `
-            <div class="pair">${pair.from}/${pair.to}</div>
-            <div class="signal ${signal === 'BUY' ? 'buy' : signal === 'SELL' ? 'sell' : 'wait'}">
-              ${signal} ${signal !== "WAIT" ? `(${strength}%)` : ""}
-            </div>
-            <div class="timer">Expiry: 1 minute</div>
-            <iframe src="https://s.tradingview.com/widgetembed/?frameElementId=tradingview_${pair.symbol.replace(':', '')}&symbol=${pair.symbol}&interval=1&symboledit=1&saveimage=1&toolbarbg=F1F3F6&studies=[]&theme=dark&style=1&timezone=Etc/UTC&withdateranges=1&hideideas=1" allowtransparency="true" scrolling="no"></iframe>
-          `;
-          document.getElementById("signals").appendChild(box);
-        } catch (err) {
-          console.error("Error loading pair", pair, err);
-        }
-      }
-
-      const now = new Date().toLocaleTimeString();
-      document.getElementById("lastUpdated").textContent = `Last updated: ${now}`;
-    }
-
-    // Countdown timer
-    setInterval(() => {
-      timer--;
-      document.getElementById("countdown").textContent = `Refreshing in ${timer}s...`;
-      if (timer <= 0) {
-        updateSignals();
-        timer = 60;
-      }
-    }, 1000);
-
-    updateSignals(); // Initial
+    setTimeout(() => {
+      window.location.href = links[newIndex];
+    }, delay);
   </script>
+
 </body>
 </html>
